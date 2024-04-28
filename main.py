@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 from keras.models import load_model
-import pygame
 import time
+import tensorflow as tf
 
+model = load_model('much little filter with 200 epoch.h5')
 
 def preprocess_img(img):
     # 이미지 크기 조정
@@ -17,55 +18,30 @@ def preprocess_img(img):
     gray = np.expand_dims(gray, axis=-1)
     return gray
 
-# 모델 불러오기
-model = load_model('image_classification_model.h5')
+capture = cv2.VideoCapture(0)
+capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-# pygame 초기화
-pygame.mixer.init()
-
-# 기상 곡 파일 경로 설정
-alarm_sound_path = '군대 기상나팔.mp3'
-
-# 웹캠 캡처 시작
-cap = cv2.VideoCapture(0)
-
-# 이전 프레임의 예측값 저장을 위한 변수
-prev_prediction = None
-
-while input("Press'q' to quir: ") != 'q':
-    # 프레임 읽기
-    ret, frame = cap.read()
-    
-    if not ret:
-        break
-    
-    # 이미지 전처리
+while cv2.waitKey(33) < 0:
+    ret, frame = capture.read()
     preprocessed_img = preprocess_img(frame)
+
+
     
     # 예측
     prediction = model.predict(preprocessed_img)
 
-    if prev_prediction != 'he is alive' and prediction == 'he is alive':
-        pygame.mixer.music.stop()
-        time.sleep(2)
-        continue
+    ##print(np.argmax(prediction))
 
-    if prev_prediction != 'he is alive' and prediction != 'he is alive':
-        time.sleep(2)
-        continue
+    max_prob = np.max(prediction[0])
+
+    # 첫 번째 인덱스 확률이 가장 높으면 1 출력, 아니면 0 출력
+    if prediction[0][0] == max_prob:
+        output = 1
+    else:
+        output = 0
+
+    print(output)
+
+    time.sleep(1)
     
-    if prediction != 'he is alive':
-        # 기상 곡 재생
-        pygame.mixer.music.load(alarm_sound_path)
-        pygame.mixer.music.play()
-        prev_prediction = prediction
-        time.sleep(2)
-        continue
-
-
-    # 잠시 대기
-    time.sleep(2)
-
-# 웹캠 캡처 종료
-cap.release()
-cv2.destroyAllWindows()
