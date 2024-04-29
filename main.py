@@ -8,6 +8,9 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 import time
 from keras.models import load_model
+import pygame
+
+prev_predection = 0
 
 def load_data(dataset_path):
     images = []
@@ -76,7 +79,7 @@ def model_training(dataset_path, model_name):
   # 모델 학습
   history = model.fit(x_train, y_train, epochs=100, batch_size=32, validation_data=(x_test, y_test))
 
-  model_name = "c:/Users/parksangwon/Documents/" + model_name +".h5"
+  model_name = "c:/Users/parksangwon/Documents/" + model_name +".h5" ##바꿔줘야해요
 
   model.save(model_name)
 
@@ -111,37 +114,48 @@ def preprocess_img(img):
     gray = np.expand_dims(gray, axis=-1)
     return gray
 
-def camera_logic(model_addr):
+def camera_logic(model_addr, alarm_sound_path):
 
   model = load_model('model_addr')
   capture = cv2.VideoCapture(0)
   capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
   capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-  while cv2.waitKey(33) < 0:
+  while True:
       ret, frame = capture.read()
       preprocessed_img = preprocess_img(frame)
 
       # 예측
       prediction = model.predict(preprocessed_img)
 
-      ##print(np.argmax(prediction))
-
-      max_prob = np.max(prediction[0])
+      
 
       # 첫 번째 인덱스 확률이 가장 높으면 1 출력, 아니면 0 출력
-      if prediction[0][0] == max_prob:
-          output = 1
-      else:
-          output = 0
+      prediction = np.argmax(prediction[0])
 
-      print(output)
+      if prev_predection == 1 and prediction == 0:
+          pygame.mixer.music.stop()
+          time.sleep(1)
+          continue
+      
+      if prediction == 0 and prediction == 1:
+          pygame.mixer.music.load(alarm_sound_path)
+          pygame.mixer.music.play()
+          prev_prediction = prediction
+          time.sleep(1)
+          continue
 
       time.sleep(1)
 
+      if cv2.waitKey(33) == ord('q'):
+        break
+
+
   return
 
-current_directory = "c:/Users/parksangwon/Documents/"
+capture.release()
+
+current_directory = "c:/Users/parksangwon/Documents/" ##파일 저장할 위치
 
 h5_files_in_current_directory = find_h5_files(current_directory)
 
@@ -162,7 +176,8 @@ for file_path in h5_files_in_current_directory:
 
 n = input("Please enter the number of the moedl you want to run :")
 
+music_add = input("Please enter the address of your music file :")
+
 model_add = h5_files_in_current_directory[n]
 
-camera_logic(model_add)
-
+camera_logic(model_add, music_add)
