@@ -10,7 +10,7 @@ import time
 from keras.models import load_model
 import pygame
 
-prev_predection = 0
+prev_prediction = 0
 
 def load_data(dataset_path):
     images = []
@@ -133,7 +133,7 @@ def camera_logic(model_addr, alarm_sound_path):
       # 첫 번째 인덱스 확률이 가장 높으면 1 출력, 아니면 0 출력
       prediction = np.argmax(prediction[0])
 
-      if prev_predection == 1 and prediction == 0:
+      if prev_prediction == 1 and prediction == 0:
           pygame.mixer.music.stop()
           time.sleep(1)
           continue
