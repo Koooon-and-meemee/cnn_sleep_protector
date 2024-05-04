@@ -133,17 +133,18 @@ def camera_logic(model_addr, alarm_sound_path):
       # 첫 번째 인덱스 확률이 가장 높으면 1 출력, 아니면 0 출력
       prediction = np.argmax(prediction[0])
 
-      if prev_prediction == 1 and prediction == 0:
-          pygame.mixer.music.stop()
-          time.sleep(1)
-          continue
-      
-      if prediction == 0 and prediction == 1:
-          pygame.mixer.music.load(alarm_sound_path)
-          pygame.mixer.music.play()
-          prev_prediction = prediction
-          time.sleep(1)
-          continue
+      #if prev_prediction == 1 and prediction == 0:
+      #    pygame.mixer.music.stop()
+      #    time.sleep(1)
+      #    continue
+      #
+      #if prediction == 0 and prediction == 1:
+      #    pygame.mixer.music.load(alarm_sound_path)
+      #    pygame.mixer.music.play()
+      #    prev_prediction = prediction
+      #    time.sleep(1)
+      #    continue
+      print(prediction)
 
       time.sleep(1)
 
@@ -188,4 +189,10 @@ music_add = input("Please enter the address of your music file :")
 
 model_add = h5_files_in_current_directory[int(n)]
 
-camera_logic(model_add, music_add)
+print(model_add)
+original_path = model_add
+converted_path = original_path.replace("\\", "/")
+print(converted_path)
+
+
+camera_logic(converted_path, music_add)
