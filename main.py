@@ -79,7 +79,7 @@ def model_training(dataset_path, model_name):
   # 모델 학습
   history = model.fit(x_train, y_train, epochs=100, batch_size=32, validation_data=(x_test, y_test))
 
-  model_name = "c:/Users/parksangwon/Documents/" + model_name +".h5" ##바꿔줘야해요
+  model_name = "C:\\Users\\User\\weights\\" + model_name +".h5" ##바꿔줘야해요
 
   model.save(model_name)
 
@@ -153,9 +153,8 @@ def camera_logic(model_addr, alarm_sound_path):
 
   return
 
-capture.release()
 
-current_directory = "c:/Users/parksangwon/Documents/" ##파일 저장할 위치
+current_directory = "C:\\Users\\User\\weights\\" ##파일 저장할 위치
 
 h5_files_in_current_directory = find_h5_files(current_directory)
 
@@ -170,14 +169,23 @@ h5_files_in_current_directory = find_h5_files(current_directory)
 
 print("\n")
 print("List of currently owned models :")
-
 for file_path in h5_files_in_current_directory:
   print(file_path)
 
-n = input("Please enter the number of the moedl you want to run :")
+new_one = input("Do you want to train new model? :")
+if (new_one == 'y'):
+   user_input = input("Enter Your dataset address and model name :")
+   file_add, model_naame = user_input.split(",")
+   model_training(file_add, model_naame)
+   h5_files_in_current_directory = find_h5_files(current_directory)
+   for file_path in h5_files_in_current_directory:
+    print(file_path)
+
+
+n = input("Please enter the number of the model you want to run :")
 
 music_add = input("Please enter the address of your music file :")
 
-model_add = h5_files_in_current_directory[n]
+model_add = h5_files_in_current_directory[int(n)]
 
 camera_logic(model_add, music_add)
