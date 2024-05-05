@@ -6,11 +6,12 @@ from tensorflow.keras import layers, models
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
+import plotext as plot
 import time
 from keras.models import load_model
 import pygame
 
-prev_prediction = 0
+
 
 def load_data(dataset_path):
     images = []
@@ -45,7 +46,7 @@ def model_training(dataset_path, model_name):
       image = np.expand_dims(image, axis=-1)
       image = np.expand_dims(image, axis=0)
       label = labels[i]
-      for _ in range(10):  # 각 이미지당 10장의 추가 생성
+      for _ in range(5):  # 각 이미지당 10장의 추가 생성
           for x_augmented, y_augmented in datagen.flow(image, [label], batch_size=1):
               augmented_images.append(np.squeeze(x_augmented))
               augmented_labels.append(y_augmented[0])
@@ -79,7 +80,7 @@ def model_training(dataset_path, model_name):
   # 모델 학습
   history = model.fit(x_train, y_train, epochs=100, batch_size=32, validation_data=(x_test, y_test))
 
-  model_name = "C:\\Users\\User\\weights\\" + model_name +".h5" ##바꿔줘야해요
+  model_name = "C:\\Users\\User\\sleep_detector\\weights\\" + model_name +".h5" ##바꿔줘야해요
 
   model.save(model_name)
 
@@ -90,6 +91,19 @@ def model_training(dataset_path, model_name):
   plt.ylabel('Accuracy')
   plt.legend(['Train', 'Test'], loc='upper left')
   plt.show()
+
+  accuracy_values = history.history['accuracy']
+  val_accuracy_values = history.history['val_accuracy']
+  epochs = range(1, len(accuracy_values) + 1)
+
+  # 그래프 출력
+  plot.plot(epochs, accuracy_values, label='Train Accuracy')
+  plot.plot(epochs, val_accuracy_values, label='Validation Accuracy')
+  plot.title('Model accuracy')
+  plot.xlabel('Epoch')
+  plot.ylabel('Accuracy')
+  plot.grid(True)
+  plot.show()
 
   print("The model training is complete.")
   return
@@ -114,48 +128,48 @@ def preprocess_img(img):
     gray = np.expand_dims(gray, axis=-1)
     return gray
 
-def camera_logic(model_addr, alarm_sound_path):
+def camera_logic(model_addr):
 
-  model = load_model('model_addr')
+  model = load_model(model_addr)
   capture = cv2.VideoCapture(0)
   capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
   capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
+  prev_prediction = 2  # 반복문 이전에 변수를 선언하고 초기화합니다.
+
   while True:
-      ret, frame = capture.read()
-      preprocessed_img = preprocess_img(frame)
+        ret, frame = capture.read()
 
-      # 예측
-      prediction = model.predict(preprocessed_img)
+        preprocessed_img = preprocess_img(frame)
 
-      
+        # 예측
+        prediction = model.predict(preprocessed_img)
+        prediction = np.argmax(prediction[0])
 
-      # 첫 번째 인덱스 확률이 가장 높으면 1 출력, 아니면 0 출력
-      prediction = np.argmax(prediction[0])
-
-      #if prev_prediction == 1 and prediction == 0:
-      #    pygame.mixer.music.stop()
-      #    time.sleep(1)
-      #    continue
-      #
-      #if prediction == 0 and prediction == 1:
-      #    pygame.mixer.music.load(alarm_sound_path)
-      #    pygame.mixer.music.play()
-      #    prev_prediction = prediction
-      #    time.sleep(1)
-      #    continue
-      print(prediction)
-
-      time.sleep(1)
-
-      if cv2.waitKey(33) == ord('q'):
-        break
+        if prev_prediction != 2 and prediction == 2:
+            pygame.mixer.music.stop()
+            print("music stop")
+            time.sleep(1)
+            prev_prediction = prediction
+            continue
+        
+        if prev_prediction == 2 and prediction != 2:
+            pygame.mixer.music.play()
+            print("music start")
+            time.sleep(1)
+            prev_prediction = prediction
+            continue
+        
+        
+        time.sleep(1)
+        prev_prediction = prediction  # 각 반복에서 이전 예측값을 업데이트합니다.
 
 
-  return
 
+pygame.init()
+pygame.mixer.init() 
 
-current_directory = "C:\\Users\\User\\weights\\" ##파일 저장할 위치
+current_directory = "C:\\Users\\User\\sleep_detector\\weights\\" ##파일 저장할 위치
 
 h5_files_in_current_directory = find_h5_files(current_directory)
 
@@ -169,30 +183,32 @@ if h5_files_in_current_directory == []:
 h5_files_in_current_directory = find_h5_files(current_directory)
 
 print("\n")
-print("List of currently owned models :")
+print("List of currently owned models")
+print("=============================================")
 for file_path in h5_files_in_current_directory:
   print(file_path)
+print("=============================================")
+new_one = 'o'
+while(new_one == 'y' or 'n'):
+    new_one = input("Do you want to train new model? ['y' or 'n']:")
+    print('\n')
+    if (new_one == 'y'):
+       user_input = input("Enter Your dataset address and model name :")
+       file_add, model_naame = user_input.split(",")
+       model_training(file_add, model_naame)
+       h5_files_in_current_directory = find_h5_files(current_directory)
+       for file_path in h5_files_in_current_directory:
+        print(file_path)
+    elif (new_one == 'n'):
+        n = input("Please enter the number of the model you want to run :")
 
-new_one = input("Do you want to train new model? :")
-if (new_one == 'y'):
-   user_input = input("Enter Your dataset address and model name :")
-   file_add, model_naame = user_input.split(",")
-   model_training(file_add, model_naame)
-   h5_files_in_current_directory = find_h5_files(current_directory)
-   for file_path in h5_files_in_current_directory:
-    print(file_path)
+        music_add = input("Please enter the address of your music file :")
 
+        model_add = h5_files_in_current_directory[int(n)-1]
+        original_path = model_add
+        converted_path = original_path.replace("\\", "/")
 
-n = input("Please enter the number of the model you want to run :")
+        music_add = music_add.replace("\\", "/")
 
-music_add = input("Please enter the address of your music file :")
-
-model_add = h5_files_in_current_directory[int(n)]
-
-print(model_add)
-original_path = model_add
-converted_path = original_path.replace("\\", "/")
-print(converted_path)
-
-
-camera_logic(converted_path, music_add)
+        pygame.mixer.music.load(music_add)
+        camera_logic(converted_path)
